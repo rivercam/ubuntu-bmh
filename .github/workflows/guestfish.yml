@@ -48,6 +48,9 @@ jobs:
           mkdir-p /home/ubuntu/.ssh
           copy-in authorized_keys /home/ubuntu/.ssh
           chmod 0600 /home/ubuntu/.ssh/authorized_keys
+          mkdir-p /root/.ssh
+          copy-in authorized_keys /root/.ssh
+          chmod 0600 /root/.ssh
           quit
           EOF
   
