@@ -44,7 +44,7 @@ jobs:
       - name: Run Guestfish with Manual Mounting
         run: |
           sudo guestfish --rw -a noble-server-cloudimg-amd64.img -i <<EOF
-          ls home
+          ls /home
           mkdir-p /home/ubuntu/.ssh
           copy-in authorized_keys /ubuntu/.ssh
           chmod 0600 /ubuntu/.ssh/authorized_keys
