@@ -1,0 +1,96 @@
+# This is a basic workflow to build a custom Rocky Linux 9.5 Image
+
+name: GuestFish
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "guestfish"
+  guestfish:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v4
+    
+      - name: Install Guest FS Tools
+        run: sudo apt install -y -qq guestfs-tools wget xfsprogs e2fsprogs
+
+      - name: Fetch Ubuntu LTS 24 Current
+        run: wget -nv https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+
+      - name: Fetch SSH Keys
+        run: |
+          wget -nv https://github.com/albal.keys -O albal.keys
+          wget -nv https://github.com/maneshmistry8.keys
+          cat albal.keys maneshmistry8.keys > authorized_keys
+
+      - name: Run Guestfish with Manual Mounting
+        run: |
+          sudo guestfish --rw -a noble-server-cloudimg-amd64.img -i <<EOF
+          copy-in authorized_keys /ubuntu/.ssh
+          chmod 0600 /ubuntu/.ssh/authorized_keys
+          quit
+          EOF
+  
+      - name: Move image
+        run: mv noble-server-cloudimg-amd64.img noble-server-cloudimg-custom-amd64.img
+
+      - name: Create SHA256SUM
+        run: sha256sum *.img > SHA256SUM
+
+      - name: Store image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ubuntu 24 LTS Custom Cloud Image
+          path: |
+            SHA256SUM
+            noble-server-cloudimg-custom-amd64.img
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: 24.04.LTS-custom2
+          release_name: "Ubuntu 24 LTS Custom Cloud Image"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset QCOW2
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./noble-server-cloudimg-custom-amd64.img
+          asset_name: noble-server-cloudimg-custom-amd64.img
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset SHA256SUM
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./SHA256SUM
+          asset_name: SHA256SUM
+          asset_content_type: text/plain
+          
