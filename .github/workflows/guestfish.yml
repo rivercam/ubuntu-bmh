@@ -46,7 +46,7 @@ jobs:
           sudo guestfish --rw -a noble-server-cloudimg-amd64.img -i <<EOF
           ls /home
           mkdir-p /home/ubuntu/.ssh
-          copy-in authorized_keys /ubuntu/.ssh
+          copy-in authorized_keys /home/ubuntu/.ssh
           chmod 0600 /ubuntu/.ssh/authorized_keys
           quit
           EOF
